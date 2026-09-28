@@ -16,15 +16,7 @@ class HeteroGraphAE(nn.Module):
             ('cell', m, 'cell'): GCNConv(in_channels, hidden_channels) for m in modalities
         }, aggr='sum')
         self.bn1 = nn.ModuleDict({'cell': nn.BatchNorm1d(hidden_channels)})
-
-        # # Intermediate layers (if num_layers > 1).
-        # self.layers = nn.ModuleList([
-        #     HeteroConv({
-        #         ('cell', m, 'cell'): GATv2Conv(hidden_channels, hidden_channels // 8, heads=8)
-        #         for m in modalities
-        #     }, aggr='sum')
-        #     for _ in range(num_layers - 1)
-        # ])
+        
         self.bn_layers = nn.ModuleList([
             nn.ModuleDict({'cell': nn.BatchNorm1d(hidden_channels)}) for _ in range(num_layers - 1)
         ])
@@ -50,12 +42,6 @@ class HeteroGraphAE(nn.Module):
         x_dict = self.conv1(x_dict, data.edge_index_dict)
         x_dict = {k: self.bn1[k](x) for k, x in x_dict.items()}
         x_dict = {k: F.silu(x) for k, x in x_dict.items()}
-
-        # # Intermediate layers.
-        # for bn_layer, layer in zip(self.bn_layers, self.layers):
-        #     x_dict = layer(x_dict, data.edge_index_dict)
-        #     x_dict = {k: bn_layer[k](x) for k, x in x_dict.items()}
-        #     x_dict = {k: F.silu(x) for k, x in x_dict.items()}
 
         # Compute the latent representation.
         z_dict = self.z_conv(x_dict, data.edge_index_dict)
