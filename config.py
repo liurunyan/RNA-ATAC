@@ -6,9 +6,9 @@ from typing import List
 @dataclass(frozen=True)
 class DataConfig:
     """Data-related configuration."""
-    dataset_name: str = "LUNG-CITE"
+    dataset_name: str = "PBMC-Multiome"
     base_data_dir: str = "data/processed"
-    modalities: tuple = ("ADT", "RNA")
+    modalities: tuple = ("Peaks", "RNA")
     batch_size: int = 256
 
 
