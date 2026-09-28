@@ -8,7 +8,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from config import Config, get_default_config
 
-from model.model import GraphAELightningModule
+from model.model import GraphAE
 
 
 def set_seed(seed: int = 42) -> None:
@@ -22,7 +22,7 @@ def set_seed(seed: int = 42) -> None:
         torch.backends.cudnn.benchmark = False
 
 
-class GraphAETrainer(GraphAELightningModule):
+class GraphAETrainer(GraphAE):
     """Extended Lightning module with optimizer configuration for training."""
 
     def __init__(self, in_channels, hidden_channels, latent_channels, modalities, num_layers,

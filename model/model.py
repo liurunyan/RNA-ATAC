@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from torch_geometric.nn import HeteroConv, GCNConv, GATv2Conv
+from torch_geometric.nn import HeteroConv, GCNConv
 from torch_geometric.utils import negative_sampling
 
 
@@ -69,7 +69,7 @@ class HeteroGraphAE(nn.Module):
         return z
 
 
-class GraphAELightningModule(pl.LightningModule):
+class GraphAE(pl.LightningModule):
     """PyTorch Lightning module for training the Heterogeneous Graph Autoencoder."""
 
     def __init__(self, in_channels, hidden_channels, latent_channels, 
