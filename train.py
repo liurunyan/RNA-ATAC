@@ -157,20 +157,7 @@ def main():
     set_seed(cfg.training.seed)
 
     # # Configuration
-    # DATASET_NAME = "LUNG-CITE"
-    # BASE_DATA_DIR = os.path.join("data", "processed")
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # # MODALITIES = ['Peaks', 'RNA']
-    # MODALITIES = ['ADT', 'RNA']
-
-    # # Hyperparameters
-    # BATCH_SIZE = 256
-    # HIDDEN_CHANNELS = 512
-    # LATENT_CHANNELS = 512
-    # NUM_LAYERS = 2
-    # LEARNING_RATE = 1e-3
-    # N_EPOCHS = 500  # Change to 500 for full training
-    # WARMUP_EPOCHS = 3
     # Load data
     hetero_data = load_data(cfg.data.dataset_name, cfg.data.base_data_dir, DEVICE)
 
