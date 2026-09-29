@@ -12,6 +12,7 @@ class HeteroGraphAE(nn.Module):
     def __init__(self, in_channels, hidden_channels, latent_channels, modalities, num_layers=2, **kwargs):
         super().__init__()
         # First heterogeneous convolution layer.
+        # aggr: "sum", "mean", "min", "max", "cat", None
         self.conv1 = HeteroConv({
             ('cell', m, 'cell'): GCNConv(in_channels, hidden_channels) for m in modalities
         }, aggr='sum')
@@ -38,6 +39,7 @@ class HeteroGraphAE(nn.Module):
     def encode(self, data):
         """Encode graph data into latent representation."""
         x_dict = {'cell': data['cell'].x}
+    
         # First layer: conv -> batch norm -> activation.
         x_dict = self.conv1(x_dict, data.edge_index_dict)
         x_dict = {k: self.bn1[k](x) for k, x in x_dict.items()}
