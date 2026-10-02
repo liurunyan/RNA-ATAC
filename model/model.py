@@ -23,6 +23,7 @@ class HeteroGraphAE(nn.Module):
         ])
 
         # Single heterogeneous convolution to compute the latent representation.
+        # aggr: "sum", "mean", "min", "max", "cat", None
         self.z_conv = HeteroConv({
             ('cell', m, 'cell'): GCNConv(hidden_channels, latent_channels) for m in modalities
         }, aggr='sum')
