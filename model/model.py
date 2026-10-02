@@ -15,7 +15,7 @@ class HeteroGraphAE(nn.Module):
         # aggr: "sum", "mean", "min", "max", "cat", None
         self.conv1 = HeteroConv({
             ('cell', m, 'cell'): GCNConv(in_channels, hidden_channels) for m in modalities
-        }, aggr='sum')
+        }, aggr="sum")
         self.bn1 = nn.ModuleDict({'cell': nn.BatchNorm1d(hidden_channels)})
         
         self.bn_layers = nn.ModuleList([
