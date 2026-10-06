@@ -15,7 +15,7 @@ class DataConfig:
 @dataclass(frozen=True)
 class ModelConfig:
     """Model architecture configuration."""
-    hidden_channels: int = 512
+    hidden_channels: int = 1024  #ATAC + RNA
     latent_channels: int = 512
     num_layers: int = 2
     num_clusters: int = 20

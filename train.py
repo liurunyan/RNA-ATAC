@@ -181,7 +181,8 @@ def main():
         total_epochs=cfg.training.n_epochs,
         warmup_epochs=cfg.training.warmup_epochs
     )
-    print(f"Model initialized with {in_channels} input channels")
+    # print(f"Model initialized with {in_channels} input channels")
+    print("Model:", model)
 
     # Train model
     trainer = train_model(model, dataloader,  cfg.training.n_epochs, cfg.output.checkpoint_dir)

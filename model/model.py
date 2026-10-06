@@ -42,7 +42,10 @@ class HeteroGraphAE(nn.Module):
         x_dict = {'cell': data['cell'].x}
     
         # First layer: conv -> batch norm -> activation.
+        print("11111:", x_dict["cell"].shape)
         x_dict = self.conv1(x_dict, data.edge_index_dict)
+        print("22222:", x_dict["cell"].shape)
+        exit()
         x_dict = {k: self.bn1[k](x) for k, x in x_dict.items()}
         x_dict = {k: F.silu(x) for k, x in x_dict.items()}
 
