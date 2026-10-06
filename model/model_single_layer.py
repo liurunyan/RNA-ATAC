@@ -84,7 +84,6 @@ class GraphAE(pl.LightningModule):
             num_layers=num_layers
         )
 
-
     def forward(self, data):
         return self.model(data)
 
