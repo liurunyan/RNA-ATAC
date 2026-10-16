@@ -49,9 +49,14 @@ class HeteroGraphAE(nn.Module):
             self.bns.append(nn.ModuleDict({'cell': nn.BatchNorm1d(self.hidden_dims[i])}))
 
         # Final layer to compute latent representation: last hidden_dim -> latent_channels
+        # self.z_conv = HeteroConv({
+        #     ('cell', m, 'cell'): GCNConv(self.hidden_dims[-1], latent_channels) for m in modalities
+        # }, aggr='sum')
+
+        # for attention: aggr=none 
         self.z_conv = HeteroConv({
             ('cell', m, 'cell'): GCNConv(self.hidden_dims[-1], latent_channels) for m in modalities
-        }, aggr='sum')
+        }, aggr=none)
 
         # Create decoders for each modality
         self.decoder_dict = nn.ModuleDict({
@@ -70,7 +75,8 @@ class HeteroGraphAE(nn.Module):
             x_dict = self.convs[i](x_dict, data.edge_index_dict)
             x_dict = {k: self.bns[i][k](x) for k, x in x_dict.items()}
             x_dict = {k: F.silu(x) for k, x in x_dict.items()}
-    
+        print("aaaaaaa:", x_dict['cell'].shape())
+        exit()
         # Compute the latent representation
         z_dict = self.z_conv(x_dict, data.edge_index_dict)
         return z_dict
@@ -93,6 +99,47 @@ class HeteroGraphAE(nn.Module):
         z_dict = self.encode(data)
         z = z_dict['cell']
         return z
+
+
+class Attention(Module):
+    """
+    General Attention Fusion Module (Inspired by SpatialGlue), used for intra- or inter-modality fusion.
+    """
+    def __init__(self, in_feat, out_feat, dropout=0.0, act=F.relu):
+        super(Attention, self).__init__()                    
+        self.in_feat = in_feat
+        self.out_feat = out_feat
+
+        # Trainable parameters: W_omega and U_omega (used to compute attention weights)
+        self.w_omega = Parameter(torch.FloatTensor(in_feat, out_feat))
+        self.u_omega = Parameter(torch.FloatTensor(out_feat, 1))
+
+        # Initialize parameters
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        # Use Xavier uniform initialization for stable training
+        init.xavier_uniform_(self.w_omega)
+        init.xavier_uniform_(self.u_omega)
+
+    def forward(self, emb1, emb2):
+        # Stack the two input embeddings [N, 2, D]
+        emb_stack = torch.stack([emb1, emb2], dim=1)
+
+        # 1. Compute attention score V = tanh(E * W_omega)
+        v = torch.tanh(torch.matmul(emb_stack, self.w_omega))
+        # 2. Compute vu = V * U_omega [N, 2, 1]
+        vu = torch.matmul(v, self.u_omega)
+        # 3. Compute Softmax weights Alpha across modality dimension 1
+        # squeeze(2) removes the last dimension of size 1 [N, 2]
+        alpha = F.softmax(vu.squeeze(2) + 1e-6, dim=1)
+
+        # 4. Weighted Sum: emb_combined = sum(E * Alpha)
+        # unsqueeze(-1) adds a dimension at the end [N, 2, 1] for broadcast multiplication
+        emb_combined = torch.sum(emb_stack * alpha.unsqueeze(-1), dim=1)
+
+        # Return the fused embedding and attention weights
+        return emb_combined, alpha
 
 
 class GraphAE(pl.LightningModule):
