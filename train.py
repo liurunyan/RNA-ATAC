@@ -8,7 +8,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from config import Config, get_default_config
 
-from sc.model.model_multiconv import GraphAE
+from smodel.model import GraphAE
 
 
 def set_seed(seed: int = 42) -> None:
