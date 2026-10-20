@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import Module, Parameter, init
 import pytorch_lightning as pl
 from torch_geometric.nn import HeteroConv, GCNConv
 from torch_geometric.utils import negative_sampling
@@ -53,10 +54,10 @@ class HeteroGraphAE(nn.Module):
         #     ('cell', m, 'cell'): GCNConv(self.hidden_dims[-1], latent_channels) for m in modalities
         # }, aggr='sum')
 
-        # for attention: aggr=none 
+        # for attention: aggr=None 
         self.z_conv = HeteroConv({
             ('cell', m, 'cell'): GCNConv(self.hidden_dims[-1], latent_channels) for m in modalities
-        }, aggr=none)
+        }, aggr=None)
 
         # Create decoders for each modality
         self.decoder_dict = nn.ModuleDict({
@@ -65,20 +66,27 @@ class HeteroGraphAE(nn.Module):
                 nn.Sigmoid()
             ) for m in modalities
         })
+        self.attention = Attention(latent_channels, latent_channels)
+        # latent_channels?????????
 
     def encode(self, data):
         """Encode graph data into latent representation."""
-        x_dict = {'cell': data['cell'].x}
-    
+        x_dict = {'cell': data['cell'].x} # x_dict['cell'].size: N*F
+        
+        # data.edge_index_dict: (('cell', 'm', 'cell')
+        # The edges in the diagram define which cells can transmit information to one another.
         # Apply multiple conv layers with batch norm and activation
         for i in range(self.num_layers):
             x_dict = self.convs[i](x_dict, data.edge_index_dict)
             x_dict = {k: self.bns[i][k](x) for k, x in x_dict.items()}
             x_dict = {k: F.silu(x) for k, x in x_dict.items()}
-        print("aaaaaaa:", x_dict['cell'].shape())
-        exit()
         # Compute the latent representation
+        # z_dict: N*num_modalities*latent_channels
         z_dict = self.z_conv(x_dict, data.edge_index_dict)
+
+        # Attention fusion across all modalities for each cell.
+        modality_embeddings = list(z_dict['cell'].unbind(dim=1))
+        z_dict['cell'], _ = self.attention(modality_embeddings)
         return z_dict
 
     def decode(self, z, edge_index):
@@ -122,9 +130,9 @@ class Attention(Module):
         init.xavier_uniform_(self.w_omega)
         init.xavier_uniform_(self.u_omega)
 
-    def forward(self, emb1, emb2):
-        # Stack the two input embeddings [N, 2, D]
-        emb_stack = torch.stack([emb1, emb2], dim=1)
+    def forward(self, embeddings):
+        # Stack modality embeddings: N*num_modalities*latent_channels.
+        emb_stack = torch.stack(embeddings, dim=1)
 
         # 1. Compute attention score V = tanh(E * W_omega)
         v = torch.tanh(torch.matmul(emb_stack, self.w_omega))
