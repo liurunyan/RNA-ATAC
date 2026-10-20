@@ -8,7 +8,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from config import Config, get_default_config
 
-from smodel.model import GraphAE
+from model.model import GraphAE
 
 
 def set_seed(seed: int = 42) -> None:
@@ -64,7 +64,7 @@ def load_data(dataset_name: str, base_data_dir: str, device: torch.device):
     """Load preprocessed heterogeneous graph data."""
     graph_path = os.path.join(base_data_dir, dataset_name, f"{dataset_name}_processed.pt")
     print(f"Loading data from: {graph_path}")
-    loaded_data = torch.load(graph_path)
+    loaded_data = torch.load(graph_path, weights_only=False)
     hetero_data = loaded_data.to(device)
     print(f"Data loaded successfully. Number of cells: {hetero_data['cell'].x.size(0)}")
     return hetero_data
@@ -118,80 +118,80 @@ def train_model(model, dataloader, n_epochs: int, checkpoint_dir: str):
     return trainer
 
 
-# def save_embeddings(model, hetero_data, dataset_name: str, output_dir: str):
-#     """Generate and save latent embeddings."""
-#     os.makedirs(output_dir, exist_ok=True)
-
-#     model.eval()
-#     with torch.no_grad():
-#         hetero_data = hetero_data.to(model.device)
-#         z = model(hetero_data)
-
-#         # Optionally compute edge predictions
-#         pos_edge_index = list(hetero_data.edge_index_dict.values())[0]
-#         pred_edge_probs = model.model.decode(z, pos_edge_index)
-
-#     # Save embeddings in different formats
-#     latent_embedding = z.detach().cpu().numpy()
-
-#     npy_path = os.path.join(output_dir, f"{dataset_name}_latent_embedding.npy")
-#     np.save(npy_path, latent_embedding)
-
-#     pt_path = os.path.join(output_dir, f"{dataset_name}_latent_embedding.pt")
-#     torch.save(z.detach().cpu(), pt_path)
-
-#     print(f"Latent embedding shape: {latent_embedding.shape}")
-#     print(f"Saved latent embedding to: {npy_path}")
-#     print(f"Saved latent embedding to: {pt_path}")
-
-#     return z
-
-def save_embeddings(model, hetero_data, dataset_name: str, output_dir: str, modalities: list):
-    """Generate and save latent embeddings (per-modality and integrated)."""
+def save_embeddings(model, hetero_data, dataset_name: str, output_dir: str):
+    """Generate and save latent embeddings."""
     os.makedirs(output_dir, exist_ok=True)
 
     model.eval()
     with torch.no_grad():
         hetero_data = hetero_data.to(model.device)
-        z_modality_dict, z_integrated = model(hetero_data)
+        z = model(hetero_data)
 
-        # Optionally compute edge predictions using integrated embedding
+        # Optionally compute edge predictions
         pos_edge_index = list(hetero_data.edge_index_dict.values())[0]
-        pred_edge_probs = model.model.decode(z_integrated, pos_edge_index)
+        pred_edge_probs = model.model.decode(z, pos_edge_index)
 
-    # Verify cell count consistency
-    num_input_cells = hetero_data['cell'].x.size(0)
-    assert z_integrated.size(0) == num_input_cells, (
-        f"Integrated embedding row count ({z_integrated.size(0)}) does not match "
-        f"input cell count ({num_input_cells})"
-    )
-
-    # Save integrated embedding
-    latent_embedding = z_integrated.detach().cpu().numpy()
+    # Save embeddings in different formats
+    latent_embedding = z.detach().cpu().numpy()
 
     npy_path = os.path.join(output_dir, f"{dataset_name}_latent_embedding.npy")
     np.save(npy_path, latent_embedding)
 
     pt_path = os.path.join(output_dir, f"{dataset_name}_latent_embedding.pt")
-    torch.save(z_integrated.detach().cpu(), pt_path)
+    torch.save(z.detach().cpu(), pt_path)
 
-    print(f"Integrated embedding shape: {latent_embedding.shape}")
-    print(f"Saved integrated embedding to: {npy_path}")
-    print(f"Saved integrated embedding to: {pt_path}")
+    print(f"Latent embedding shape: {latent_embedding.shape}")
+    print(f"Saved latent embedding to: {npy_path}")
+    print(f"Saved latent embedding to: {pt_path}")
 
-    # Save per-modality embeddings
-    for modality, z_modality in z_modality_dict.items():
-        assert z_modality.size(0) == num_input_cells, (
-            f"Modality {modality} embedding row count ({z_modality.size(0)}) does not match "
-            f"input cell count ({num_input_cells})"
-        )
-        modality_npy_path = os.path.join(output_dir, f"{dataset_name}_{modality}_embedding.npy")
-        modality_pt_path = os.path.join(output_dir, f"{dataset_name}_{modality}_embedding.pt")
-        np.save(modality_npy_path, z_modality.detach().cpu().numpy())
-        torch.save(z_modality.detach().cpu(), modality_pt_path)
-        print(f"Saved {modality} embedding to: {modality_npy_path} and {modality_pt_path}")
+    return z
 
-    return z_modality_dict, z_integrated
+# def save_embeddings(model, hetero_data, dataset_name: str, output_dir: str, modalities: list):
+#     """Generate and save latent embeddings (per-modality and integrated)."""
+#     os.makedirs(output_dir, exist_ok=True)
+
+#     model.eval()
+#     with torch.no_grad():
+#         hetero_data = hetero_data.to(model.device)
+#         z_modality_dict, z_integrated = model(hetero_data)
+
+#         # Optionally compute edge predictions using integrated embedding
+#         pos_edge_index = list(hetero_data.edge_index_dict.values())[0]
+#         pred_edge_probs = model.model.decode(z_integrated, pos_edge_index)
+
+#     # Verify cell count consistency
+#     num_input_cells = hetero_data['cell'].x.size(0)
+#     assert z_integrated.size(0) == num_input_cells, (
+#         f"Integrated embedding row count ({z_integrated.size(0)}) does not match "
+#         f"input cell count ({num_input_cells})"
+#     )
+
+#     # Save integrated embedding
+#     latent_embedding = z_integrated.detach().cpu().numpy()
+
+#     npy_path = os.path.join(output_dir, f"{dataset_name}_latent_embedding.npy")
+#     np.save(npy_path, latent_embedding)
+
+#     pt_path = os.path.join(output_dir, f"{dataset_name}_latent_embedding.pt")
+#     torch.save(z_integrated.detach().cpu(), pt_path)
+
+#     print(f"Integrated embedding shape: {latent_embedding.shape}")
+#     print(f"Saved integrated embedding to: {npy_path}")
+#     print(f"Saved integrated embedding to: {pt_path}")
+
+#     # Save per-modality embeddings
+#     for modality, z_modality in z_modality_dict.items():
+#         assert z_modality.size(0) == num_input_cells, (
+#             f"Modality {modality} embedding row count ({z_modality.size(0)}) does not match "
+#             f"input cell count ({num_input_cells})"
+#         )
+#         modality_npy_path = os.path.join(output_dir, f"{dataset_name}_{modality}_embedding.npy")
+#         modality_pt_path = os.path.join(output_dir, f"{dataset_name}_{modality}_embedding.pt")
+#         np.save(modality_npy_path, z_modality.detach().cpu().numpy())
+#         torch.save(z_modality.detach().cpu(), modality_pt_path)
+#         print(f"Saved {modality} embedding to: {modality_npy_path} and {modality_pt_path}")
+
+#     return z_modality_dict, z_integrated
 
 
 def main():
@@ -235,10 +235,10 @@ def main():
     trainer = train_model(model, dataloader,  cfg.training.n_epochs, cfg.output.checkpoint_dir)
 
     # Save embeddings
-    # z = save_embeddings(model, hetero_data, cfg.data.dataset_name, cfg.output.embedding_dir)
-    z_modality_dict, z_integrated = save_embeddings(
-        model, hetero_data, cfg.data.dataset_name, cfg.output.embedding_dir, cfg.data.modalities
-    )
+    z = save_embeddings(model, hetero_data, cfg.data.dataset_name, cfg.output.embedding_dir)
+    # z_modality_dict, z_integrated = save_embeddings(
+    #     model, hetero_data, cfg.data.dataset_name, cfg.output.embedding_dir, cfg.data.modalities
+    # )
     print("\nTraining pipeline completed successfully!")
 
 
