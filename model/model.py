@@ -142,7 +142,7 @@ class Attention(Module):
         # squeeze(2) removes the last dimension of size 1 [N, 2]
         alpha = F.softmax(vu.squeeze(2) + 1e-6, dim=1)
 
-        # 4. Weighted Sum: emb_combined = sum(E * Alpha)
+        # Weighted Sum: emb_combined = sum(E * Alpha)
         # unsqueeze(-1) adds a dimension at the end [N, 2, 1] for broadcast multiplication
         emb_combined = torch.sum(emb_stack * alpha.unsqueeze(-1), dim=1)
 
