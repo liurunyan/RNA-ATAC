@@ -9,7 +9,6 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from config import Config, get_default_config
 from model.model import GraphAE
 
-
 def set_seed(seed: int = 42) -> None:
     """Set random seeds for reproducibility."""
     random.seed(seed)
@@ -59,7 +58,6 @@ class GraphAETrainer(GraphAE):
         }
 
 
-
 def load_data(dataset_name: str, base_data_dir: str, device: torch.device):
     """Load preprocessed heterogeneous graph data."""
     graph_path = os.path.join(base_data_dir, dataset_name, f"{dataset_name}_processed.pt")
@@ -68,6 +66,7 @@ def load_data(dataset_name: str, base_data_dir: str, device: torch.device):
     hetero_data = loaded_data.to(device)
     print(f"Data loaded successfully. Number of cells: {hetero_data['cell'].x.size(0)}")
     return hetero_data
+
 
 def create_dataloader(hetero_data, modalities, batch_size: int = 512):
     """Create a NeighborLoader for mini-batch training."""
