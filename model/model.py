@@ -134,11 +134,11 @@ class Attention(Module):
         # Stack modality embeddings: N*num_modalities*latent_channels.
         emb_stack = torch.stack(embeddings, dim=1)
 
-        # 1. Compute attention score V = tanh(E * W_omega)
+        # Compute attention score V = tanh(E * W_omega)
         v = torch.tanh(torch.matmul(emb_stack, self.w_omega))
-        # 2. Compute vu = V * U_omega [N, 2, 1]
+        # Compute vu = V * U_omega [N, 2, 1]
         vu = torch.matmul(v, self.u_omega)
-        # 3. Compute Softmax weights Alpha across modality dimension 1
+        # Compute Softmax weights Alpha across modality dimension 1
         # squeeze(2) removes the last dimension of size 1 [N, 2]
         alpha = F.softmax(vu.squeeze(2) + 1e-6, dim=1)
 
